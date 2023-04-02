@@ -1,0 +1,4 @@
+../Core/Src/gps.c:69:5:gps_decode	24	static
+../Core/Src/gps.c:78:5:gps_init	8	static
+../Core/Src/gps.c:122:5:is_gps_connected	8	static
+../Core/Src/gps.c:144:6:calc_gps	168	static

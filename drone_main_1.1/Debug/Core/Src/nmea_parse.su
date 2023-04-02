@@ -1,0 +1,5 @@
+../Core/Src/nmea_parse.c:10:5:gps_checksum	32	static
+../Core/Src/nmea_parse.c:33:5:nmea_GPGGA	232	static
+../Core/Src/nmea_parse.c:93:5:nmea_GPGSA	152	static
+../Core/Src/nmea_parse.c:118:5:nmea_GPGLL	232	static
+../Core/Src/nmea_parse.c:166:6:nmea_parse	40	static

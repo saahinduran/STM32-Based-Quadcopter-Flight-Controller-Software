@@ -1,0 +1,2 @@
+../Core/Src/FIRFilter.c:13:6:FIRFilter_Init	24	static
+../Core/Src/FIRFilter.c:30:7:FIRFilter_Update	24	static

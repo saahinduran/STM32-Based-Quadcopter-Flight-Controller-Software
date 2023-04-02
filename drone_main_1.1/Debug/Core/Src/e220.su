@@ -1,0 +1,14 @@
+../Core/Src/e220.c:14:6:E220_init_declare_pins	24	static
+../Core/Src/e220.c:28:8:E220_enter_config_mode	24	static
+../Core/Src/e220.c:50:8:E220_read_register	24	static
+../Core/Src/e220.c:68:8:E220_write_register	24	static
+../Core/Src/e220.c:90:8:E220_read_register_all	24	static
+../Core/Src/e220.c:106:8:E220_enter_normal_mode	16	static
+../Core/Src/e220.c:117:8:E220_transmit_payload	24	static
+../Core/Src/e220.c:123:8:E220_transmit_payload_DMA	24	static
+../Core/Src/e220.c:129:8:E220_transmit_payload_DMA_v2	24	static
+../Core/Src/e220.c:138:8:E220_receive_payload	24	static
+../Core/Src/e220.c:146:8:E220_receive_payload_DMA	24	static
+../Core/Src/e220.c:155:8:E220_set_packetsize_32k	24	static
+../Core/Src/e220.c:164:8:E220_set_datarate_62k	24	static
+../Core/Src/e220.c:173:6:E220_reset	16	static
