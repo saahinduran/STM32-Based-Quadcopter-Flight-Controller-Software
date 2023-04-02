@@ -1,0 +1,6 @@
+../Core/Src/pwm_esc.c:22:7:map	24	static
+../Core/Src/pwm_esc.c:27:6:activate_motors	8	static
+../Core/Src/pwm_esc.c:35:6:changespeedM1	16	static
+../Core/Src/pwm_esc.c:50:6:changespeedM2	16	static
+../Core/Src/pwm_esc.c:61:6:changespeedM3	16	static
+../Core/Src/pwm_esc.c:71:6:changespeedM4	16	static

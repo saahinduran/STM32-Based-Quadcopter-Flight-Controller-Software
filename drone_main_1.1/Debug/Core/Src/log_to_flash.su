@@ -1,0 +1,10 @@
+../Core/Src/log_to_flash.c:18:6:flash_write_calib_data_byte	32	static
+../Core/Src/log_to_flash.c:29:6:flash_write_calib_data_four_byte	32	static
+../Core/Src/log_to_flash.c:38:6:flash_write_calib_data_compass	32	static
+../Core/Src/log_to_flash.c:51:6:read_calib_value	32	static
+../Core/Src/log_to_flash.c:57:6:flash_init_for_log	8	static
+../Core/Src/log_to_flash.c:71:6:flash_init_for_calibration	8	static
+../Core/Src/log_to_flash.c:77:9:log_write	40	static
+../Core/Src/log_to_flash.c:90:6:fill_calibration_buffer	8	static
+../Core/Src/log_to_flash.c:102:6:fill_calibration_buffer_compass	4	static
+../Core/Src/log_to_flash.c:114:6:fill_calibration_buffer_uint	24	static

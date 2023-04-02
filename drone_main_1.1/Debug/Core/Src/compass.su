@@ -1,0 +1,6 @@
+../Core/Src/compass.c:25:6:i2c_disconnected_compass	16	static
+../Core/Src/compass.c:52:6:compass_read_corrected	40	static
+../Core/Src/compass.c:86:6:compass_read	24	static
+../Core/Src/compass.c:98:6:compas_calibrate	16	static
+../Core/Src/compass.c:154:5:compass_connect	32	static
+../Core/Src/compass.c:170:6:fill_compass_buffer	4	static

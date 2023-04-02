@@ -1,0 +1,8 @@
+../Core/Src/failsafe.c:13:6:i2c_disconnected	16	static
+../Core/Src/failsafe.c:40:6:failsafe_handler	8	static
+../Core/Src/failsafe.c:46:6:red_led_on	8	static
+../Core/Src/failsafe.c:49:6:red_led_off	8	static
+../Core/Src/failsafe.c:52:6:green_led_on	8	static
+../Core/Src/failsafe.c:55:6:green_led_off	8	static
+../Core/Src/failsafe.c:58:6:blue_led_on	8	static
+../Core/Src/failsafe.c:61:6:blue_led_off	8	static
