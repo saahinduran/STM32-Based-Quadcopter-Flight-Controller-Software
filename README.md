@@ -13,3 +13,5 @@ Flight Software Has The Following Features:
 9) Driver for MPU6050, MS5611,U-Blox M8N GPS, HMC5883L Compass
 
 Note: Detailed documentation, circuit schematics and a guidance about how you can deploy the code to your microcontroller will be added soon.
+
+See the videos of the quad in following channel: https://www.youtube.com/@sahinduran66
