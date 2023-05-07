@@ -34,7 +34,6 @@
 #include "failsafe.h"
 #include "gy63-i2c.h"
 #include "gps.h"
-#include "nmea_parse.h"
 
 /* USER CODE END Includes */
 
@@ -60,7 +59,7 @@
 #define Sector13_Address 0x08120000  // - 0x0813 FFFF 128 Kbyte
 #define Sector14_Address 0x08140000  // - 0x0815 FFFF 128 Kbyte
 #define Sector15_Address 0x08160000  // - 0x0817 FFFF 128 Kbyte
-#define BufferSize 512
+
 
 /* USER CODE END PD */
 
@@ -123,7 +122,7 @@ extern float accel_output[4];
 //////////////////////////////////////////////////////////////
 extern struct receiverdata My_Receiver;
 uint16_t DRONE_STATUS;
-uint8_t send_buffer[32]="Selamun Aleykum.";
+uint8_t send_buffer[32]="Hi There!";
 uint8_t receive_buffer[32]={0};
 int16_t result;
 uint8_t all_reg_rx[8], all_reg_tx[8];
@@ -161,8 +160,6 @@ float real_height=0;
 //////////////////BAROMETER RELATED VARIABLES/////////////////
 //////////////////////////////////////////////////////////////
 int loop_counter_pressure_requested=0;
-int temp_requested_flag=0;
-int pressure_ready=0;
 extern struct GY63_t GY63;
 float baro_coeff=50;
 uint8_t alt_hold_flag;
@@ -173,12 +170,12 @@ extern float Alt_Control;
 ////////////BAROMETER IIR FILTER RELATED VARIABLES////////////
 //////////////////////////////////////////////////////////////
 float baro_filter_input[4];float baro_filter_output[4];
+float baro_filter_output_coeff[3]={2.6235,-2.3146
+		,0.6855};
+float baro_filter_input_coeff[4]={6.996662426856934e-04,0.002098998728057,
+		0.002098998728057,6.996662426856934e-04};
 
-float baro_filter_output_coeff[3]={2.686157396548143,-2.419655110966473
-		,0.730165345305723};
 
-float baro_filter_input_coeff[4]={4.165461390757477e-04,0.001249638417227,
-		0.001249638417227,4.165461390757477e-04};
 //////////////////////////////////////////////////////////////
 ///////////////COMPASS & GPS RELATED VARIABLES////////////////
 //////////////////////////////////////////////////////////////
@@ -188,16 +185,14 @@ uint8_t data_compass[13];
 uint8_t MAGZ[6];
 float heading;
 HAL_StatusTypeDef result_compass;
-int16_t compass_offset_y;                              //Add the y-offset to the raw value.
-float compass_scale_y;                               //Scale the y-value so it matches the other axis.
-int16_t compass_offset_z;                              //Add the z-offset to the raw value.
-float compass_scale_z;                               //Scale the z-value so it matches the other axis.
+int16_t compass_offset_y;
+float compass_scale_y;
+int16_t compass_offset_z;
+float compass_scale_z;
 int16_t compass_offset_x;
 int16_t compass_cal_values[6];
 float Xsf,Ysf,Xoff,Yoff,Zsf,Zoff;
 extern float heading_corrected;
-GPS myData;
-uint8_t DataBuffer[BufferSize];
 int gps_connected=0;
 
 //////////////////////////////////////////////////////////////
@@ -211,6 +206,7 @@ double gps_go_result[2];
 uint8_t gps_go_flag=0;
 uint8_t heading_lock=0;
 float heading_error=0;
+uint8_t gps_fix=0;
 
 /* USER CODE END PV */
 
@@ -248,7 +244,7 @@ void fill_buffer();
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-   __HAL_DBGMCU_FREEZE_IWDG(); ///DEBUG MODDA WATCHDOG TIMER'I KAPAT, YOKSA RESET ATAR
+   __HAL_DBGMCU_FREEZE_IWDG(); ///TURN THE WATCHDOG TIMER OFF IN DEBUG MODE, OTHERWISE MCU WILL KEEP RESETTING ITSELF
 
 
   /* USER CODE END 1 */
@@ -272,7 +268,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-  //MX_IWDG_Init();   /// BU BURADA KAPALI OLMALI YOKSA INITIALIZATION KISIMLARINDA KART RESET ATAR!
+  //MX_IWDG_Init();  // CALL THIS FUNCTION BEFORE MAIN LOOP BEGINS
   MX_I2C2_Init();
   MX_USART2_UART_Init();
   MX_TIM1_Init();
@@ -286,85 +282,82 @@ int main(void)
   MX_UART7_Init();
   /* USER CODE BEGIN 2 */
 
-  //////KUMANDA VE IMU BASLAT/////
+  //////TRANSMITTER AND IMU INIT/////
+  red_led_on();    // assume no transmitter is connected initially
+  while(MPU6050_Init_Benim(&hi2c2)==1);       // connect to imu
+  start_reading_battery();                    // start the adc for battery voltage
 
-
-  red_led_on();    // baslangicta kumanda bagli degil, kirmizi ledi yak
-  while(MPU6050_Init_Benim(&hi2c2)==1);       // imu baglanti
-  start_reading_battery();                    // batarya icin adc baslat
-
-  while(connect_receiver());                  // kumanda baglan
-  red_led_off();  // kumanda baglandiktan sonra kirmizi led sondur
- while(startup_handler());   //baslangic modlarini sec, imu kalibrasyon,pusula kalibrasyon, direkt baslangic
+  while(connect_receiver());                  // connect to transmitter
+  red_led_off();  // turn the red led off after connection to transsmitter
+  while(startup_handler());   //choose a startup mode: imu calibration ,compass calibration, flight;
 
  //////RF MODUL INITIALIZATION/////
- E220_init_declare_pins(&LoraTX, GPIOB, GPIOE, GPIO_PIN_10, GPIO_PIN_11, GPIO_PIN_15,&huart5); //E220 pinlerini tanimla.
- E220_enter_normal_mode(&LoraTX); //E220'yi 0.moda (transeceiver) al.
+ E220_init_declare_pins(&LoraTX, GPIOB, GPIOE, GPIO_PIN_10, GPIO_PIN_11, GPIO_PIN_15,&huart5); //declare E220 pins.
+ E220_enter_normal_mode(&LoraTX); //switch the E220 to transceiver
+
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-  /////MOTORLARI BASLAT/////
-  while(arm_handler());           //bu fonksiyon motorları aktif eder,
-  stop_motors();                    //bu fonksiyon motorları durdurur ,
+  /////INIT MOTORS/////
+  while(arm_handler());           //motors will be activated after this function,
+  stop_motors();                    //this function shuts the motors ,
 
-  /////BAROMETRE BASLAT/////
+  /////INIT BAROMETER/////
   MS5611_Initilize(); // Never start without this function call
-  MS5611_Request_Pressure();  //algoritmanin duzgun calisması icin
-  /////LOG KAYDI BASLAT/////
-  //flash_init_for_log();
+  MS5611_Request_Temp();  //for the timing algorithm to work properly
+
+  /////INIT LOG RECORD/////
+  //flash_init_for_log();    //this function erases the sectors from 5 to 13 to flight data logging, warning: This function takes around 4-5 seconds to execute.
 
 
   while(gps_init());   //gps initialization
-  HAL_TIM_Base_Start(&htim3);              //loop timer sayici baslat
+  HAL_TIM_Base_Start(&htim3);              //initiate the loop timer counter
   HAL_Delay(1000);                       // wait 1s to see if the data from gps will corrupt
   while(is_gps_connected()); //wait until gps data frame fits into 100 byte buffer
-  green_led_on(); /// yesil led yak, ucusa hazir
-  E220_receive_payload_DMA(&LoraTX,receive_buffer,32);  // RF Modul DMA alici baslat
+  green_led_on(); /// turn the green led on, ready for flight
+  E220_receive_payload_DMA(&LoraTX,receive_buffer,32);  // start DMA for RF module receive
 
-  MX_IWDG_Init();                            //watchdog timer baslat
+  MX_IWDG_Init();                            //start the watchdog timer
   while (1)
   {
 
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  htim3.Instance->CNT=0;         // baslangic timerini sifirla
-	  time1=htim3.Instance->CNT;     // baslangic degerini sakla
+	  htim3.Instance->CNT=0;         // reset timer
+	  time1=htim3.Instance->CNT;     // keep the initial value
 
-	  MPU6050_Read_All_Benim(&hi2c2, &MPU6050_1);    //imu verilerini oku
+	  MPU6050_Read_All_Benim(&hi2c2, &MPU6050_1);    //read the imu data
 
-
-
-	  // KUMANDADAN GELEN FRAME TUTUYOR MU BAK, ONA GORE HESAPLARI YAP
-
-	  if(decode_receiver()==1) // decode_receiver fonksiyonu bağlanti kopunca 1 doner !
+	  if(decode_receiver()==1) // if the connection with transmitter this function will return 1
 	  {
-		  red_led_on();  //kirmizi ledi yak
-		  failsafe_handler();                       //motorlari kapat ve bekle
-		  //rf_listen=1;       //rf modulu dinlemeye al, tx yapma
-		  //_channels[0]=1000;  // kumanda_roll=0 derece
-		  //_channels[1]=1000;  // kumanda_pitch=0 derece
-		  //_channels[3]=1000;  // kumanda_yaw=0 derece
-		  //if(rf_listen) decode_rf(); // yer istasyonundan gelen veriyi decode et
+		  red_led_on();  //turn the red led on
+		  failsafe_handler();                       //shut motors and wait (mcu will reset itself)
+		  //rf_listen=1;       //trivial
+		  //_channels[0]=1000;  //trivial
+		  //_channels[1]=1000;  //trivial
+		  //_channels[3]=1000;  //trivial
+		  //if(rf_listen) decode_rf(); //trivial
 	  }
 	  else {
-		  //rf_listen=0;  //kumandada problem yok, modul tx yapsin
+		  //rf_listen=0;  //trivial
 		  red_led_off();
 
 	  }
 
 
 
-	  //PID KONTROL SINYALLERINI HESAPLA
+	  //CALCULATE THE PID CONTROL SIGNALS
+	  //adjust parameters are the feedback control signals of the cascaded pid loop
 	  pitch_level_adjust = angle_pitch_output * 31;
 	  roll_level_adjust = angle_roll_output * 31;
 	  calculate_motor_powers();
 
 
-	  //MOTORLAR ICIN GUC SINYALLERINI HESAPLA
+	  //CALCULATE THE SIGNALS FOR THE MOTORS (PITCH ,ROLL AND YAW)
 	  Calculated_Throttle1=(_channels[2] + (int)Roll_Control + (int)Pitch_Control  + (int)Yaw_Control);
 	  if(Calculated_Throttle1<1100) Calculated_Throttle1=1100;
 	  if(Calculated_Throttle1>1800) Calculated_Throttle1=1800;
@@ -381,10 +374,12 @@ int main(void)
 	  if(Calculated_Throttle4<1100) Calculated_Throttle4=1100;
 	  if(Calculated_Throttle4>1800) Calculated_Throttle4=1800;
 
-	  if(_channels[4]==1000){   //GPS GO ACIK
+	  if(_channels[4]==1000){   //ALT HOLD ENABLED
 		  //if(loop_counter%3==0)
 		  altitude_hold();
-		  calc_gps((double) longitude/1e7,(double) latitude/1e7, 39.938885,32.818112 , gps_go_result);
+		  status=2;
+		  /*
+		  calc_gps((double) latitude/1e7,(double) longitude/1e7, 39.938801, 32.818207, gps_go_result);
 		  heading_error=gps_go_result[1]-heading_corrected;
 		  if(gps_go_result[0]>1){
 			  gps_go_flag=1;
@@ -393,22 +388,17 @@ int main(void)
 			  gps_hold();
 			  gps_go_flag=0;
 		  }
+		  */
 	  }
-	  else if(_channels[4]==0){ //GPS HOLD SWITCH'I ACIK
-		  //if(loop_counter%50==0)
-		  if(1)
-		  {
-			  gps_hold();
-		  }
-		  //if(loop_counter%3==0)
-		  if(1)
-		  {
-			  altitude_hold();
-		  }
+	  else if(_channels[4]==0 && gps_fix==1){ //GPS HOLD ENABLED
 		  gps_go_flag=0;
+		  gps_hold();
+		  altitude_hold();
+		  status=3;
 	  }
 
-	  else if(_channels[4]==2000){ //ATTIDE MODE  SWITCH'I ACIK
+	  else if(_channels[4]==2000 || (_channels[4]==0 && gps_fix==0 && _channels[4]!=1000) ){ //ATTIDE MODE  ENABLED
+		  gps_go_flag=0;
 		  reset_alt_pid();
 		  alt_hold_flag=0;
 		  alt_setpoint=0;
@@ -416,18 +406,12 @@ int main(void)
 		  gps_hold_flag=0;
 		  gps_setpoint_lat=0;
 		  gps_setpoint_lon=0;
-		  gps_go_flag=0;
+		  status=1;
 	  }
 
 
-	  //PID KONTROL SINYALLERINI MOTORLARA YAZ
-	  if(_channels[10]<1000){
-		  Calculated_Throttle4=1000;
-		  Calculated_Throttle3=1000;
-		  Calculated_Throttle2=1000;
-		  Calculated_Throttle1=1000;
-	  }
-	  if(_channels[9]==2000){
+	  //APPLY THE PID CONTROL SIGNALS TO THE MOTORS
+	  if(_channels[9]==2000){  // if reset pid & shut motors switch is enabled
 		  reset_pid();
 		  changespeedM1(&motorStop,MIN_Duty_cycle);
 		  changespeedM2(&motorStop,MIN_Duty_cycle);
@@ -436,44 +420,75 @@ int main(void)
 		  HAL_IWDG_Refresh(&hiwdg);
 	  }
 	  else{
-		  changespeedM1(&Calculated_Throttle1,MIN_Duty_cycle);
-		  changespeedM2(&Calculated_Throttle2,MIN_Duty_cycle);
-		  changespeedM3(&Calculated_Throttle3,MIN_Duty_cycle);
-		  changespeedM4(&Calculated_Throttle4,MIN_Duty_cycle);
+		  if(battery_voltage_float>10 && battery_voltage_float<12.70){ // battery voltage compensation
+			  Calculated_Throttle1+=(12-battery_voltage_float)*40;
+			  Calculated_Throttle2+=(12-battery_voltage_float)*40;
+			  Calculated_Throttle3+=(12-battery_voltage_float)*40;
+			  Calculated_Throttle4+=(12-battery_voltage_float)*40;
+			  if(Calculated_Throttle1<1100) Calculated_Throttle1=1100;
+			  if(Calculated_Throttle1>1800) Calculated_Throttle1=1800;
+			  if(Calculated_Throttle2<1100) Calculated_Throttle2=1100;
+			  if(Calculated_Throttle2>1800) Calculated_Throttle2=1800;
+			  if(Calculated_Throttle3<1100) Calculated_Throttle3=1100;
+			  if(Calculated_Throttle3>1800) Calculated_Throttle3=1800;
+			  if(Calculated_Throttle4<1100) Calculated_Throttle4=1100;
+			  if(Calculated_Throttle4>1800) Calculated_Throttle4=1800;
+			  changespeedM1(&Calculated_Throttle1,MIN_Duty_cycle);
+			  changespeedM2(&Calculated_Throttle2,MIN_Duty_cycle);
+			  changespeedM3(&Calculated_Throttle3,MIN_Duty_cycle);
+			  changespeedM4(&Calculated_Throttle4,MIN_Duty_cycle);
+		  }
+		  else{ // if the battery is belov 10 volts, shut the motors for the sake of li-po battery
+			  changespeedM1(&Calculated_Throttle1,MIN_Duty_cycle);
+			  changespeedM2(&Calculated_Throttle2,MIN_Duty_cycle);
+			  changespeedM3(&Calculated_Throttle3,MIN_Duty_cycle);
+			  changespeedM4(&Calculated_Throttle4,MIN_Duty_cycle);
+			  status=99;
+		  }
+
 	  }
-	  //ADC OKUMASINI VOLTAJA CEVIR  1.012145748987854 kalibrasyon degeridir
+	  //CONVERT THE ADC READING INTO VOLTAGE  1.012145748987854 is calibration value
 	  battery_voltage_float=(float)battery_raw_data /4095*5.7*3.3*(double)1.012145748987854;
 
-	  //rf modul dinlemeye gecmediyse ve 100ms gectiyse yer istasyonuna bilgi gonder
+	  //if 100 ms passed, send information to the ground station, rf_listen is trivial
 	  if(!rf_listen && loop_counter%25==0)
 	  {
 		  E220_transmit_payload_DMA(&LoraTX,log_buffer,32);
 	  }
-	  // gonderilecek bilgiyi 32 baytlik buffer'a sigdir
+	  // fit the information into 32 byte buffer
 	  fill_buffer();
 	  //
-
-	  if(loop_counter%25==0){
+/*
+	  if(loop_counter%25==0){  /// log the flight data into flash
 		  log_write(log_buffer, &address_counter);
+	  }
+*/
+
+	  baro_read();  //read the barometer (timing will be handled inside this function)
+	  if(loop_counter%50==5 && loop_counter!=0){
+		  if(gps_decode(gps_buffer,&latitude,&longitude)==0){ // extract the latitude and longitude information from ubx message
+			  gps_fix=1;
+		  }
+		  else gps_fix=0;
 	  }
 
 
-	  baro_read();  //barometre oku (zamanlamayı fonksiyon icerde halleder)
-	  gps_decode(gps_buffer,&latitude,&longitude); //ubx mesajindan enlem ve boylami cek
-	  compass_read_corrected(); //pusula oku
+	  compass_read_corrected(); //Read compass data
+
 	  if(_channels[3]<100 && _channels[2]<1100 && _channels[0]>1800 && _channels[1]>1800){
-		  while(1);
+		  while(1); // left joystick (throttle and yaw) down-right and right joystick (pitch and roll) down-right
+		 //this causes mcu to reset
 	  }
 
 	  loop_counter++;
-	  if(loop_counter==300){
+	  if(loop_counter==1200){
 		  loop_counter=0;
 	  }
-	  timex=htim3.Instance->CNT-time1;       //beklemeye gelmeden ne kadar surmus
-	  while((htim3.Instance->CNT-time1)<=4000){  //4 ms gecene kadar bekle
+	  timex=htim3.Instance->CNT-time1;       //how much time did it take the code to come here
+	  while((htim3.Instance->CNT-time1)<=4000){  //wait until 4ms passes
 	  }
-	  time2=(htim3.Instance->CNT-time1);   //total loop ne kadar surmus
-	  HAL_IWDG_Refresh(&hiwdg);       //watchdog besle
+	  time2=(htim3.Instance->CNT-time1);   //how much time did the main loop take
+	  HAL_IWDG_Refresh(&hiwdg);       //feed the watchdog timer
 
 
   }

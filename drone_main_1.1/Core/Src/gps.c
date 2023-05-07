@@ -33,6 +33,9 @@ extern char *delp;
 extern double latitude,longitude;
 extern int gps_connected;
 extern uint8_t gps_buffer[100];
+
+
+////// THIS FUNCTION IS TO DECODE NMEA MESSAGES, HOWEVER I USED UBX MESSAGES TO DECODE LATITUDE AND LONGITUDE
 /*
 int gps_decode(uint8_t *message,double*latitude,double *longitude){
 
@@ -71,11 +74,18 @@ int gps_decode(uint8_t *message,uint32_t*latitude,uint32_t *longitude){
 	*latitude=(message[30])+(message[31]<<8)+(message[32]<<16)+(message[33]<<24);
 	*longitude=(message[34])+(message[35]<<8)+(message[36]<<16)+(message[37]<<24);
 
+	if(message[0]==181 && message[1]==98){  // ARE THE FIRST TWO BYTES CORRECT ?
+		if(message[26]==3){  // IF SO, IS GPS FIXED ?
+			return 0;
+		}
+		else
+			return 1;
+	}
 
 }
 
 
-int gps_init(){
+int gps_init(){  // connect to gps and set parameters accordingly
 	HAL_UART_Receive_DMA(&huart6, (uint8_t *)gps_buffer,100);
 	HAL_Delay(100);
 	HAL_UART_Transmit(&huart6, disable_GLL, sizeof(disable_GLL), 100);
@@ -100,7 +110,7 @@ int gps_init(){
 	HAL_UART_Init(&huart6);
 	HAL_UART_Receive_DMA(&huart6, (uint8_t *)gps_buffer,100);
 	HAL_Delay(5);
-	while(gps_connected<999999){
+	while(gps_connected<999999){  // wait until frame fits into 100 bytes buffer
 		if(gps_buffer[0]!=181){
 			HAL_UART_DMAStop(&huart6);
 			HAL_Delay(10);
@@ -119,7 +129,9 @@ int gps_init(){
 	return 0;
 }
 
-int is_gps_connected(){
+int is_gps_connected(){ // additional frame check function
+						// this function is needed because after init process of gps
+						// it sends acknowledge of init process functions that will cause frame sync error
 	gps_connected=0;
 	while(gps_connected<99999){
 			if(gps_buffer[0]!=181){
@@ -141,7 +153,7 @@ int is_gps_connected(){
 
 }
 
-void calc_gps(double x1,double y1,double x2,double y2,double *result){
+void calc_gps(double x1,double y1,double x2,double y2,double *result){ // this function calculates the distance and bearing angle between two geographical positions
 		struct Position myPosition;
 		struct Position arr_Position;
 

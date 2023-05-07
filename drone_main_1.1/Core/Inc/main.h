@@ -89,6 +89,14 @@ void Error_Handler(void);
 #define RF_TX_GPIO_Port GPIOB
 #define LED3_Pin GPIO_PIN_14
 #define LED3_GPIO_Port GPIOB
+#define GPS_TX_Pin GPIO_PIN_6
+#define GPS_TX_GPIO_Port GPIOC
+#define GPS_RX_Pin GPIO_PIN_7
+#define GPS_RX_GPIO_Port GPIOC
+#define PUSULA_SDA_Pin GPIO_PIN_9
+#define PUSULA_SDA_GPIO_Port GPIOC
+#define PUSULA_SCL_Pin GPIO_PIN_8
+#define PUSULA_SCL_GPIO_Port GPIOA
 #define LED2_Pin GPIO_PIN_7
 #define LED2_GPIO_Port GPIOB
 #define BARO_SCL_Pin GPIO_PIN_8

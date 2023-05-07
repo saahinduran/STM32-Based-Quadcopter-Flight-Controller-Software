@@ -6,7 +6,7 @@
  */
 
 #include "adc_Battery.h"
-//Batarya icin ADC okumasını DMA ile baslatir.
+//Starts the ADC reading with DMA
 void start_reading_battery(){
 	HAL_ADC_Start_DMA(&hadc1,&battery_raw_data,1);
 }

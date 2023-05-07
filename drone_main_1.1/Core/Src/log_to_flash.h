@@ -10,7 +10,7 @@
 
 #include "main.h"
 
-#define PACKET_SIZE 30
+#define PACKET_SIZE 34
 #define Sector5_Address 0x08020000   // - 0x0803 FFFF 128 Kbyte
 #define Sector6_Address 0x08040000   // - 0x0805 FFFF 128 Kbyte
 #define Sector7_Address 0x08060000   // - 0x0807 FFFF 128 Kbyte

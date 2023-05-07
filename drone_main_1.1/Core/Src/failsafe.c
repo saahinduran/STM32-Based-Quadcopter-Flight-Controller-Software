@@ -9,7 +9,7 @@
 #include "receiver.h"
 
 extern I2C_HandleTypeDef hi2c2;
-/// bu fonksiyon hang kalan i2c hattini kurtarır, PF0 VE PF1'E BAGLI I2C'YI KURTARIR
+/// this function rescues the hang i2c bus that is connected to imu
 void i2c_disconnected(){
 //PF0 and PF1 are corresponding I2C pins (SCL and SDA)
 	uint16_t data;
@@ -36,7 +36,7 @@ void i2c_disconnected(){
 
 	  HAL_I2C_Init(&hi2c2);
 }
-// en kotu senaryo, bu senaryoda motorlar durur ve kart reset atar
+// worst scenerio, shut the motors and wait for watchdog to reset the mcu
 void failsafe_handler()
 {
 	stop_motors();

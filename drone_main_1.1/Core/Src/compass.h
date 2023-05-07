@@ -31,7 +31,6 @@ extern int16_t compass_offset_x;
 extern int16_t compass_cal_values[6];
 extern int compass_calibrated;
 extern float Xsf,Ysf,Xoff,Yoff;
-void fill_compass_buffer();
 extern I2C_HandleTypeDef hi2c3;
 void i2c_disconnected_compass();
 void compass_read_corrected();

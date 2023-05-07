@@ -36,8 +36,7 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Core/Src/compass.h ../Core/Src/mpu6050.h ../Core/Src/pid.h \
  ../Core/Src/receiver.h ../Core/Src/pwm_esc.h ../Core/Src/e220.h \
  ../Core/Src/adc_Battery.h ../Core/Src/log_to_flash.h \
- ../Core/Src/failsafe.h ../Core/Src/gy63-i2c.h ../Core/Src/gps.h \
- ../Core/Src/nmea_parse.h
+ ../Core/Src/failsafe.h ../Core/Src/gy63-i2c.h ../Core/Src/gps.h
 ../Core/Inc/main.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 ../Core/Inc/stm32f4xx_hal_conf.h:
@@ -84,4 +83,3 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Core/Src/failsafe.h:
 ../Core/Src/gy63-i2c.h:
 ../Core/Src/gps.h:
-../Core/Src/nmea_parse.h:

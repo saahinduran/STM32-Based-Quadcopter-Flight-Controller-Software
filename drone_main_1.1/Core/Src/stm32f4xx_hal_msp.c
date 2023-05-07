@@ -240,19 +240,19 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* hi2c)
     PC9     ------> I2C3_SDA
     PA8     ------> I2C3_SCL
     */
-    GPIO_InitStruct.Pin = GPIO_PIN_9;
+    GPIO_InitStruct.Pin = PUSULA_SDA_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     GPIO_InitStruct.Alternate = GPIO_AF4_I2C3;
-    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+    HAL_GPIO_Init(PUSULA_SDA_GPIO_Port, &GPIO_InitStruct);
 
-    GPIO_InitStruct.Pin = GPIO_PIN_8;
+    GPIO_InitStruct.Pin = PUSULA_SCL_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     GPIO_InitStruct.Alternate = GPIO_AF4_I2C3;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+    HAL_GPIO_Init(PUSULA_SCL_GPIO_Port, &GPIO_InitStruct);
 
     /* Peripheral clock enable */
     __HAL_RCC_I2C3_CLK_ENABLE();
@@ -323,9 +323,9 @@ void HAL_I2C_MspDeInit(I2C_HandleTypeDef* hi2c)
     PC9     ------> I2C3_SDA
     PA8     ------> I2C3_SCL
     */
-    HAL_GPIO_DeInit(GPIOC, GPIO_PIN_9);
+    HAL_GPIO_DeInit(PUSULA_SDA_GPIO_Port, PUSULA_SDA_Pin);
 
-    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_8);
+    HAL_GPIO_DeInit(PUSULA_SCL_GPIO_Port, PUSULA_SCL_Pin);
 
   /* USER CODE BEGIN I2C3_MspDeInit 1 */
 
@@ -645,7 +645,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
     PC6     ------> USART6_TX
     PC7     ------> USART6_RX
     */
-    GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7;
+    GPIO_InitStruct.Pin = GPS_TX_Pin|GPS_RX_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
@@ -762,7 +762,7 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* huart)
     PC6     ------> USART6_TX
     PC7     ------> USART6_RX
     */
-    HAL_GPIO_DeInit(GPIOC, GPIO_PIN_6|GPIO_PIN_7);
+    HAL_GPIO_DeInit(GPIOC, GPS_TX_Pin|GPS_RX_Pin);
 
     /* USART6 DMA DeInit */
     HAL_DMA_DeInit(huart->hdmarx);

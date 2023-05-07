@@ -35,16 +35,16 @@ double Roll_Error,Yaw_Error,Pitch_Error;
 double Roll_Control,Yaw_Control,Pitch_Control;
 extern double angle_pitch_output, angle_roll_output , angle_yaw_rate_output;
 double delta_time_in_seconds=0.638e-3;
-double kp_roll=0.8, ki_roll=0.001, kd_roll=18,pid_i_roll, last_error_roll; //roll
-double kp_pitch=0.8, ki_pitch=0.001, kd_pitch=18; //pitch
+double kp_roll=1.29, ki_roll=0.01714, kd_roll=50,pid_i_roll, last_error_roll; //roll
+double kp_pitch=1.29, ki_pitch=0.01714, kd_pitch=50; //pitch
 double pid_i_pitch, last_error_pitch;
-double kp_yaw=4, ki_yaw=0.02, kd_yaw=0, pid_i_yaw, last_error_yaw;
+double kp_yaw=4, ki_yaw=0.04, kd_yaw=0, pid_i_yaw, last_error_yaw;
 extern float gyro_roll_input,gyro_pitch_input,gyro_yaw_input;
 extern float roll_level_adjust, pitch_level_adjust;
 extern float alt_setpoint;
 extern float baro_filter_output[4];
 float Alt_Error,Alt_Control;
-float kp_alt=10,ki_alt=0,kd_alt=0.75;
+float kp_alt=5,ki_alt=0.0,kd_alt=3.75;
 double pid_i_alt,last_error_alt;
 extern int Calculated_Throttle1,Calculated_Throttle2,Calculated_Throttle3,Calculated_Throttle4;
 extern uint8_t alt_hold_flag;
@@ -58,23 +58,12 @@ extern uint32_t latitude,longitude;
 double lon_error,lat_error;
 extern float heading_corrected;
 float kp_gps=0.5,ki_gps=0,kd_gps=1.5;
-//float kp_gps=2,ki_gps=0,kd_gps=4; deneme 1
 extern float GpsRollControl_temp,GpsPitchControl_temp;
 extern uint8_t gps_go_flag;
 extern uint8_t heading_lock;
 extern float heading_error;
+extern uint32_t loop_counter;
 void calculate_motor_powers(){
-/*
-	Roll_Error=((_channels[0])-1000)*0.030     -   angle_roll_output;
-	Pitch_Error=((_channels[1])-1000)*0.030   -   angle_pitch_output;
-	Yaw_Error=((_channels[3])-1000)*0.060    -   angle_yaw_rate_output;
-	*/
-	//kp_roll=1.1+((double)_channels[5]-1000) /2000;   //KUMANDADAN PID TUNE ICIN
-	//ki_roll=0.001+((double)_channels[6]) /250000;
-	//kd_roll=20+((double)_channels[7]-1000) /200;
-	//kp_pitch=kp_roll;
-	//ki_pitch=ki_roll;
-	//kd_pitch=kd_roll;
 
 	if(gps_hold_flag){
 		_channels[0]+=GpsRollControl;
@@ -87,37 +76,54 @@ void calculate_motor_powers(){
 			_channels[1]-=155; //5 derece*31=155;
 		}
 	}
+	/*
+	kp_roll=1.1+((double)_channels[5]-1000) /2000;   //TO TUNE PID FROM THE TRANSMITTER
+	ki_roll=0.001+((double)_channels[6]) /250000;
+	kd_roll=20+((double)_channels[7]-1000) /200;
+	kp_pitch=kp_roll;
+	ki_pitch=ki_roll;
+	kd_pitch=kd_roll;
+
+	ki_roll=((double)_channels[5]) /50000;
+	ki_pitch=ki_roll;
+
+	*/
+	//kp_gps=((double)_channels[7]) /1000;   //TO TUNE PID FROM THE TRANSMITTER
+
+	//kd_gps=((double)_channels[11]) /330;
+
+	kp_alt=((double)_channels[5]) /200;   ////TO TUNE PID FROM THE TRANSMITTER
+
+	kd_alt=((double)_channels[7]) /100;
+	ki_alt=((double)_channels[6]) /5000;
+
 
 	Roll_Error=(((_channels[0])-1000)-(roll_level_adjust))/6     -   gyro_roll_input;
 
 	Pitch_Error=(((_channels[1])-1000)-(pitch_level_adjust))/6 	 -   gyro_pitch_input;
 
-	Yaw_Error=((_channels[3])-1000)*0.150   -   gyro_yaw_input;
+	Yaw_Error=((_channels[3])-1000)*0.166   -   gyro_yaw_input;
 
-	Roll_Control= getControlSignal(Roll_Error, kp_roll,ki_roll  ,kd_roll,
+	Roll_Control= getControlSignal_roll_pitch(Roll_Error, kp_roll,ki_roll  ,kd_roll,
 			&pid_i_roll,&last_error_roll , delta_time_in_seconds);
 
-	Pitch_Control= getControlSignal(Pitch_Error, kp_pitch,ki_pitch  ,kd_pitch,
+	Pitch_Control= getControlSignal_roll_pitch(Pitch_Error, kp_pitch,ki_pitch  ,kd_pitch,
 				&pid_i_pitch,&last_error_pitch , delta_time_in_seconds);
 
-	Yaw_Control= getControlSignal(Yaw_Error, kp_yaw, ki_yaw  ,kd_yaw,
+	Yaw_Control= getControlSignal_roll_pitch(Yaw_Error, kp_yaw, ki_yaw  ,kd_yaw,
 				&pid_i_yaw,&last_error_yaw , delta_time_in_seconds);
 
 
 }
 void calculate_pid_altitude(){
+
+
 	Alt_Error=  alt_setpoint - baro_filter_output[0];
-	//kp_alt=5+(float)(_channels[5])/200;
-	//kd_alt=0.75+(float)(_channels[7])/400.0;
-	//ki_alt=0+(float)(_channels[6])/40000.0;
 
-	//kp_roll=1.1+((double)_channels[5]-1000) /2000;  //KUMANDADAN PID TUNE ICIN
-	//ki_roll=0.001+((double)_channels[6]) /250000;
-	//kd_roll=20+((double)_channels[7]-1000) /200;
-
-
-	Alt_Control= getControlSignal(Alt_Error, kp_alt,ki_alt  ,kd_alt,   ///kp 73 145-145 üzerinden
+	Alt_Control= getControlSignal(Alt_Error, kp_alt,ki_alt  ,kd_alt,
 				&pid_i_alt,&last_error_alt , delta_time_in_seconds);
+	if(Alt_Control>300)Alt_Control=300;
+	if(Alt_Control<-300)Alt_Control=-300;
 
 }
 void calculate_pid_gps(){
@@ -125,17 +131,17 @@ void calculate_pid_gps(){
 
 	lat_error=(double)gps_setpoint_lat-(double)latitude;
 	lon_error=(double)gps_setpoint_lon-(double)longitude;
-	GpsRollControl_temp= getControlSignal(lat_error, kp_gps,ki_gps  ,kd_gps,   ///kp 73 145-145 üzerinden
+	GpsRollControl_temp= getControlSignal(lat_error, kp_gps,ki_gps  ,kd_gps,
 			&pid_i_lat,&last_error_lat , delta_time_in_seconds);
-	GpsPitchControl_temp= getControlSignal(lon_error, kp_gps,ki_gps  ,kd_gps,   ///kp 73 145-145 üzerinden
+	GpsPitchControl_temp= getControlSignal(lon_error, kp_gps,ki_gps  ,kd_gps,
 				&pid_i_lon,&last_error_lon , delta_time_in_seconds);
 
-	GpsPitchControl=GpsPitchControl_temp*cos(heading_corrected*M_PI/180)+GpsRollControl_temp*cos((heading_corrected-90)*M_PI/180);
-	GpsRollControl=GpsRollControl_temp*cos(heading_corrected*M_PI/180)+GpsPitchControl_temp*cos((heading_corrected+90)*M_PI/180);
-	if(GpsPitchControl>250)GpsPitchControl=250;
-	else if(GpsPitchControl<-250)GpsPitchControl=-250;
-	if(GpsRollControl>250)GpsRollControl=250;
-	else if(GpsRollControl<-250)GpsRollControl=-250;
+	GpsPitchControl=GpsPitchControl_temp*cos(heading_corrected*M_PI/180)+GpsRollControl_temp*cos((heading_corrected-90)*M_PI/180); //heading correction
+	GpsRollControl=GpsRollControl_temp*cos(heading_corrected*M_PI/180)+GpsPitchControl_temp*cos((heading_corrected+90)*M_PI/180); //heading correction
+	if(GpsPitchControl>500)GpsPitchControl=500;
+	else if(GpsPitchControl<-500)GpsPitchControl=-500;
+	if(GpsRollControl>500)GpsRollControl=500;
+	else if(GpsRollControl<-500)GpsRollControl=-500;
 }
 
 void reset_alt_pid(){
@@ -152,6 +158,8 @@ void reset_gps_pid(){
 	lat_error=0;
 	lon_error=0;
 }
+
+// this function is executed before switching the main loop to test the motors
 int calibrate_esc_and_rc()
 {
 	uint8_t Calib=0;
@@ -210,6 +218,7 @@ void waiting_for_arm()
 
 	}
 }
+// since we will use dma, frame synchronization is important
 uint8_t connect_receiver(void){
 	uint8_t receiver_connected=0;
 	while(!receiver_connected){
@@ -266,15 +275,16 @@ int startup_handler(){
 
 	while(startup_flag){
 		if(!decode_receiver()){
-			if(_channels[10]<1000){
-				if(_channels[3]>1800 && _channels[9]<1000){
+			red_led_off();
+			if(_channels[10]<1000){  // right top switch disabled
+				if(_channels[3]>1800 && _channels[9]<1000){  // left joystick left-down calibrates mpu
 					HAL_GPIO_WritePin(GPIOB, LED2_Pin, SET);
 					HAL_Delay(2000);
 					calibrate_mpu6050();
 
 					HAL_GPIO_WritePin(GPIOB, LED2_Pin, RESET);
 				}
-				else if(_channels[3]<100 && _channels[9]<1000){
+				else if(_channels[3]<100 && _channels[9]<1000){  // left joystick right-down normal startup
 					read_calib_value(Sector15_Address,6,imu_calibration_values);
 					MPU6050_1.pitch_calibration_value=imu_calibration_values[0];
 					MPU6050_1.roll_calibration_value=imu_calibration_values[1];
@@ -295,7 +305,7 @@ int startup_handler(){
 					startup_flag=0;
 
 				}
-				else if( _channels[1]>1800 && _channels[0]>1800){
+				else if( _channels[1]>1800 && _channels[0]>1800){ // right joystick right-down calibrates compass
 					read_calib_value(Sector15_Address,6,imu_calibration_values);
 					MPU6050_1.pitch_calibration_value=imu_calibration_values[0];
 					MPU6050_1.roll_calibration_value=imu_calibration_values[1];
@@ -313,6 +323,7 @@ int startup_handler(){
 
 			}
 		}
+		else red_led_on();
 	}
 	return 0;
 }
@@ -322,6 +333,7 @@ int arm_handler(){
 	uint8_t arm_flag=0;
 	while(!arm_flag){
 		if(!decode_receiver()){
+			red_led_off();
 			if(_channels[2]<1100 && _channels[10]>1000){
 				activate_motors();
 				while(calibrate_esc_and_rc());
@@ -342,6 +354,7 @@ int arm_handler(){
 				arm_flag=0;
 
 		}
+		else red_led_on();
 	}
 	return 0;
 }
@@ -353,11 +366,22 @@ void altitude_hold(){
 		alt_setpoint=baro_filter_output[0];
 	}
 	else{
-		calculate_pid_altitude();
-		Calculated_Throttle4+=Alt_Control;
-		Calculated_Throttle3+=Alt_Control;
-		Calculated_Throttle2+=Alt_Control;
-		Calculated_Throttle1+=Alt_Control;
+		if(loop_counter%6==0 && loop_counter!=0){ //sync refresh rate of sensor and pid in order to derivative term work properly
+			calculate_pid_altitude();
+		}
+
+		Calculated_Throttle4-=Alt_Control;
+		Calculated_Throttle3-=Alt_Control;
+		Calculated_Throttle2-=Alt_Control;
+		Calculated_Throttle1-=Alt_Control;
+		if(Calculated_Throttle1<1100) Calculated_Throttle1=1100;
+		if(Calculated_Throttle1>1800) Calculated_Throttle1=1800;
+		if(Calculated_Throttle2<1100) Calculated_Throttle2=1100;
+		if(Calculated_Throttle2>1800) Calculated_Throttle2=1800;
+		if(Calculated_Throttle3<1100) Calculated_Throttle3=1100;
+		if(Calculated_Throttle3>1800) Calculated_Throttle3=1800;
+		if(Calculated_Throttle4<1100) Calculated_Throttle4=1100;
+		if(Calculated_Throttle4>1800) Calculated_Throttle4=1800;
 	}
 }
 
@@ -381,17 +405,24 @@ void gps_hold(){
 		gps_setpoint_lon=longitude;
 	}
 	else{
-		calculate_pid_gps();
-		//Calculated_Throttle4=Calculated_Throttle4-GpsRollControl+GpsPitchControl;
-		//Calculated_Throttle3=Calculated_Throttle3+GpsRollControl+GpsPitchControl;
-		//Calculated_Throttle2=Calculated_Throttle2-GpsRollControl-GpsPitchControl;
-		//Calculated_Throttle1=Calculated_Throttle1+GpsRollControl-GpsPitchControl;
+		if(loop_counter%50==0 && loop_counter!=0){
+			calculate_pid_gps();
+		}
+
+		if(Calculated_Throttle1<1100) Calculated_Throttle1=1100;
+		if(Calculated_Throttle1>1800) Calculated_Throttle1=1800;
+		if(Calculated_Throttle2<1100) Calculated_Throttle2=1100;
+		if(Calculated_Throttle2>1800) Calculated_Throttle2=1800;
+		if(Calculated_Throttle3<1100) Calculated_Throttle3=1100;
+		if(Calculated_Throttle3>1800) Calculated_Throttle3=1800;
+		if(Calculated_Throttle4<1100) Calculated_Throttle4=1100;
+		if(Calculated_Throttle4>1800) Calculated_Throttle4=1800;
 	}
 
 
 
 }
-/////ESC CALIBRATION AND PROGRAMMING//// COMMENT THIS SECTION IF YOU ARE NOT GOING TO
+/////ESC CALIBRATION AND PROGRAMMING//// PUT THIS SECTION IN MAIN FUNCTION RIGHT AFTER CONNECTING TO RECEIVER
 // CALIBRATE YOUR ESCS
 /*
 while(1){
