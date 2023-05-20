@@ -11,6 +11,7 @@ Flight Software Has The Following Features:
 7) Calibration Processes for Magnetometer, Gyroscope&Accelerometer.
 8) Battery Voltage Observation 
 9) Driver for MPU6050, MS5611,U-Blox M8N GPS, HMC5883L Compass
+10) Flight Logging: If Enabled, Flight Log Data Such as Gyro Data, Compass Data, Barometer and GPS Data is Written Into Embedded Flash of the Microcontroller (Embedded Flash Then Can Be Read and Flight Log Data Plotted via MATLAB Script That We Will Share Soon)
 
 Note: Detailed documentation, circuit schematics and a guidance about how you can deploy the code to your microcontroller will be added soon.
 
